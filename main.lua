@@ -2,6 +2,8 @@ local CELL_SIZE = 20
 local GRID_X_SIZE, GRID_Y_SIZE = math.floor(love.graphics.getWidth() / CELL_SIZE), math.floor(love.graphics.getHeight() / CELL_SIZE)
 local CELL_BORDER_SIZE = 1
 local map = {}
+local visibleMap = {}
+local exploredMap = {}
 local numSquaresToFill = 500
 
 function love.load()
@@ -11,7 +13,7 @@ function love.load()
 end
 
 function love.update(dt)
-
+    updateFovMap()
 end
 
 function love.draw()
@@ -20,7 +22,7 @@ function love.draw()
         love.graphics.setBackgroundColor(0, 0, 0, 1)
         for x = 1, GRID_X_SIZE do
             for y = 1, GRID_Y_SIZE do
-                if map[x][y] == 0 then
+                if visibleMap[x][y] == 1 then
                     love.graphics.setColor(0.75, 0, 0, 1)
                     love.graphics.rectangle('fill', (x - 1) * CELL_SIZE + CELL_BORDER_SIZE, (y - 1) * CELL_SIZE + CELL_BORDER_SIZE, CELL_SIZE - 2 * CELL_BORDER_SIZE, CELL_SIZE - 2 * CELL_BORDER_SIZE)
                 end
@@ -35,7 +37,7 @@ function love.draw()
         love.graphics.setBackgroundColor(0, 0, 0, 1)
         for x = 1, GRID_X_SIZE do
             for y = 1, GRID_Y_SIZE do
-                if map[x][y] == 1 then
+                if exploredMap[x][y] == 1 then
                     love.graphics.setColor(0, 0, 0.75, 1)
                     love.graphics.rectangle('fill', (x - 1) * CELL_SIZE + CELL_BORDER_SIZE, (y - 1) * CELL_SIZE + CELL_BORDER_SIZE, CELL_SIZE - 2 * CELL_BORDER_SIZE, CELL_SIZE - 2 * CELL_BORDER_SIZE)
                 end
@@ -57,6 +59,28 @@ function love.keypressed(key)
     end
 end
 
+function isVisible(x, y)
+    local viewRadius = 100
+    local originX, originY = love.mouse.getPosition()
+    local worldTileX, worldTileY = (x - 1) * CELL_SIZE + CELL_SIZE / 2, (y - 1) * CELL_SIZE + CELL_SIZE / 2
+
+    return distance(originX, originY, worldTileX, worldTileY) < viewRadius
+
+end
+
+function updateFovMap() 
+    for x = 1, GRID_X_SIZE do
+        for y = 1, GRID_Y_SIZE do
+            if isVisible(x, y) then
+                visibleMap[x][y] = 1
+                exploredMap[x][y] = 1
+            else
+                visibleMap[x][y] = 0
+            end
+        end
+    end
+end
+
 function createMap(numSquaresToFill)
     fillGridSquares(numSquaresToFill)
 end
@@ -64,8 +88,12 @@ end
 function initMap()
     for x = 1, GRID_X_SIZE do
         map[x] = {}
+        visibleMap[x] = {}
+        exploredMap[x] = {}
         for y = 1, GRID_Y_SIZE do
             map[x][y] = 0
+            visibleMap[x][y] = 0
+            exploredMap[x][y] = 0
         end
     end
 end
@@ -75,4 +103,8 @@ function fillGridSquares(squaresToFill)
     for i = 1, squaresToFill do
         map[love.math.random(1, GRID_X_SIZE)][love.math.random(1, GRID_Y_SIZE)] = 1
     end
+end
+
+function distance(x1, y1, x2, y2)
+    return math.sqrt(math.pow(x1 - x2, 2) + math.pow(y1 - y2, 2))
 end
